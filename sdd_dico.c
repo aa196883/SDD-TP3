@@ -130,6 +130,14 @@ void insertion_dico(T_Dico *d, T_Mot mot, T_Syn s) {
     equilibrer_dico(d, mot);
 }
 
+static void ajouter_mots_du_bloc(T_Dico *d, T_Syn ensemble) {
+    if (ensemble == NULL) return;
+
+    ajouter_mots_du_bloc(d, ensemble->gauche);
+    D_ajout_entree(d, ensemble->mot, ensemble);
+    ajouter_mots_du_bloc(d, ensemble->droite);
+}
+
 /* Recherche d'un mot dans le dictionnaire */
 NoeudDico* chercher_mot_dico(T_Dico d, T_Mot mot) {
     if (d == NULL) return NULL;
@@ -154,12 +162,11 @@ void D_ajout_entree(T_Dico *d, T_Mot mot, T_Syn s) {
 /* Chargement depuis un fichier :
  * Format :
  *   N_ENT
- *   mot_vedette
- *   syn1
- *   syn2
+ *   mot1
+ *   mot2
  *   ...
  *   N_ENT
- *   mot_vedette_suivant
+ *   motX
  *   ...
  */
 void charger_dico(const char *nom_fichier, T_Dico *d) {
@@ -170,7 +177,6 @@ void charger_dico(const char *nom_fichier, T_Dico *d) {
     }
 
     char ligne[256];
-    T_Mot mot_vedette;
     T_Syn ensemble;
     int dans_bloc = 0;
 
@@ -182,31 +188,26 @@ void charger_dico(const char *nom_fichier, T_Dico *d) {
         if (strcmp(ligne, "N_ENT") == 0) {
             /* Si on était déjà dans un bloc, on l'ajoute au dico */
             if (dans_bloc) {
-                D_ajout_entree(d, mot_vedette, ensemble);
+                ajouter_mots_du_bloc(d, ensemble);
             }
 
             dans_bloc = 1;
             S_init_vide(&ensemble);
-
-            /* ligne suivante : mot vedette */
-            if (fgets(ligne, sizeof(ligne), f) == NULL) break;
-            ligne[strcspn(ligne, "\r\n")] = '\0';
-            strncpy(mot_vedette, ligne, TAILLE_MOT);
-            mot_vedette[TAILLE_MOT - 1] = '\0';
+            continue;
         }
         /* On est dans un bloc */
         else if (dans_bloc && ligne[0] != '\0') {
-            /* synonyme du mot courant */
-            T_Mot syn;
-            strncpy(syn, ligne, TAILLE_MOT);
-            syn[TAILLE_MOT - 1] = '\0';
-            ajout_synonyme(&ensemble, syn);
+            /* mot du bloc courant */
+            T_Mot mot;
+            strncpy(mot, ligne, TAILLE_MOT);
+            mot[TAILLE_MOT - 1] = '\0';
+            ajout_synonyme(&ensemble, mot);
         }
     }
 
     /* Ajouter le dernier bloc si besoin */
     if (dans_bloc) {
-        D_ajout_entree(d, mot_vedette, ensemble);
+        ajouter_mots_du_bloc(d, ensemble);
     }
 
     fclose(f);
