@@ -130,12 +130,12 @@ void insertion_dico(T_Dico *d, T_Mot mot, T_Syn s) {
     equilibrer_dico(d, mot);
 }
 
-static void ajouter_mots_du_bloc(T_Dico *d, T_Syn ensemble) {
+static void ajouter_mots_du_bloc(T_Dico *d, T_Syn ensemble, T_Syn syn) {
     if (ensemble == NULL) return;
 
-    ajouter_mots_du_bloc(d, ensemble->gauche);
-    D_ajout_entree(d, ensemble->mot, ensemble);
-    ajouter_mots_du_bloc(d, ensemble->droite);
+    ajouter_mots_du_bloc(d, ensemble->gauche, syn);
+    D_ajout_entree(d, ensemble->mot, syn);
+    ajouter_mots_du_bloc(d, ensemble->droite, syn);
 }
 
 /* Recherche d'un mot dans le dictionnaire */
@@ -188,7 +188,7 @@ void charger_dico(const char *nom_fichier, T_Dico *d) {
         if (strcmp(ligne, "N_ENT") == 0) {
             /* Si on était déjà dans un bloc, on l'ajoute au dico */
             if (dans_bloc) {
-                ajouter_mots_du_bloc(d, ensemble);
+                ajouter_mots_du_bloc(d, ensemble, ensemble);
             }
 
             dans_bloc = 1;
@@ -207,7 +207,7 @@ void charger_dico(const char *nom_fichier, T_Dico *d) {
 
     /* Ajouter le dernier bloc si besoin */
     if (dans_bloc) {
-        ajouter_mots_du_bloc(d, ensemble);
+        ajouter_mots_du_bloc(d, ensemble, ensemble);
     }
 
     fclose(f);
